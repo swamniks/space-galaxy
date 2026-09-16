@@ -1,180 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hand Tracking Galaxy System</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; }
-        #webcam-feed { position: absolute; visibility: hidden; }
-        #ui-overlay {
-            position: absolute; top: 20px; left: 20px; color: #00ffff;
-            background: rgba(0, 0, 0, 0.8); padding: 15px; border-radius: 12px;
-            border: 1px solid #00ffff; pointer-events: none; z-index: 100;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-        }
-        .status { color: #fff; font-size: 0.85em; margin-top: 8px; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Niks Website — Neural 3D Interface</title>
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#02030a;color:#e9fbff;font-family:Inter,Segoe UI,Arial,sans-serif}
+body{background:
+radial-gradient(circle at 50% 45%,rgba(0,255,255,.08),transparent 28%),
+radial-gradient(circle at 80% 20%,rgba(110,80,255,.08),transparent 25%),
+#02030a}
+#scene{position:fixed;inset:0}
+canvas{display:block}
+
+.hud{
+position:fixed;inset:0;pointer-events:none;
+background:
+linear-gradient(rgba(0,255,255,.018) 1px,transparent 1px),
+linear-gradient(90deg,rgba(0,255,255,.018) 1px,transparent 1px);
+background-size:55px 55px;
+}
+.top{
+position:fixed;top:22px;left:28px;right:28px;
+display:flex;justify-content:space-between;align-items:center;
+z-index:5;pointer-events:none
+}
+.brand{font-weight:800;letter-spacing:.18em;font-size:13px}
+.badge{
+padding:8px 12px;border:1px solid rgba(0,255,255,.3);
+border-radius:999px;background:rgba(0,10,18,.5);font-size:11px;
+letter-spacing:.12em;color:#7ffaff;backdrop-filter:blur(10px)
+}
+.panel{
+position:fixed;left:28px;bottom:28px;width:min(390px,calc(100vw - 56px));
+padding:20px;border:1px solid rgba(0,255,255,.22);border-radius:18px;
+background:rgba(3,8,16,.68);backdrop-filter:blur(18px);
+box-shadow:0 0 50px rgba(0,220,255,.06);z-index:5
+}
+h1{font-size:25px;margin:0 0 7px;letter-spacing:-.03em}
+.sub{font-size:12px;color:#8ea8b0;line-height:1.5;margin-bottom:16px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{
+pointer-events:auto;border:1px solid rgba(0,255,255,.2);
+background:rgba(0,255,255,.04);color:#cfffff;border-radius:11px;
+padding:10px 9px;cursor:pointer;font-size:11px;transition:.2s
+}
+button:hover{background:rgba(0,255,255,.12);transform:translateY(-1px)}
+.status{margin-top:13px;font-size:10px;color:#72f7ff;letter-spacing:.08em}
+.hints{position:fixed;right:28px;bottom:28px;text-align:right;color:#718b94;font-size:10px;line-height:1.8;z-index:5}
+.hints b{color:#b7edf1}
+#start{
+position:fixed;inset:0;display:grid;place-items:center;z-index:20;
+background:rgba(1,3,8,.88);backdrop-filter:blur(10px)
+}
+.startbox{text-align:center;width:min(500px,calc(100vw - 40px))}
+.startbox .orb{width:90px;height:90px;margin:0 auto 24px;border-radius:50%;
+background:radial-gradient(circle,#fff 0 3%,#00eaff 10%,transparent 58%);
+box-shadow:0 0 60px #00eaff88;animation:pulse 2s infinite}
+.startbox h2{font-size:38px;margin:0 0 10px}
+.startbox p{color:#8da7af;font-size:13px;line-height:1.6}
+#launch{margin-top:15px;padding:13px 22px;border-radius:999px;background:#00eaff;color:#001016;font-weight:800}
+@keyframes pulse{50%{transform:scale(1.12);opacity:.75}}
+@media(max-width:700px){.hints{display:none}.panel{bottom:15px;left:15px}.top{left:15px;right:15px}}
+</style>
 </head>
+
 <body>
+<div id="scene"></div>
+<div class="hud"></div>
 
-    <div id="ui-overlay">
-        <strong style="font-size: 1.1em;">Hand Commands:</strong><br>
-        • Move Hand: Navigate Space<br>
-        • Pinch (Thumb + Index): 🎇 FIREWORK<br>
-        • Open/Close Palm: Resize System<br>
-        • Make a Fist: Switch Shape<br>
-        <div class="status" id="cam-status">Status: Initializing System...</div>
-    </div>
+<div id="start">
+  <div class="startbox">
+    <div class="orb"></div>
+    <h2>NEURAL SPACE</h2>
+    <p>Interactive 3D controls powered by your camera and hand movement.<br>
+    Your gestures become the interface.</p>
+    <button id="launch">INITIALIZE EXPERIENCE</button>
+  </div>
+</div>
 
-    <video id="webcam-feed" playsinline></video>
+<div class="top">
+  <div class="brand">NIKS // INTERACTIVE AI</div>
+  <div class="badge" id="tracking">● SYSTEM STANDBY</div>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<div class="panel">
+  <h1>Neural 3D Interface</h1>
+  <div class="sub">A gesture-controlled particle intelligence system. Move, pinch, open your palm and switch between generated worlds.</div>
+  <div class="controls">
+    <button onclick="setWorld(0)">◉ NEBULA</button>
+    <button onclick="setWorld(1)">✦ DNA FIELD</button>
+    <button onclick="setWorld(2)">◎ BLACK HOLE</button>
+    <button onclick="setWorld(3)">◇ QUANTUM GRID</button>
+  </div>
+  <div class="status" id="status">CAMERA: WAITING FOR INITIALIZATION</div>
+</div>
 
-    <script>
-        let scene, camera, renderer, mainParticles;
-        let fireworks = [];
-        const TOTAL_STARS = 15000;
-        let shapeIndex = 0;
-        let scaleFactor = 1.0;
-        let lastShapeChange = 0;
-        let canLaunchFirework = true;
+<div class="hints">
+  <b>HAND INTERFACE</b><br>
+  Move index finger → steer the universe<br>
+  Pinch → create energy burst<br>
+  Open palm → expand field<br>
+  Fist → change dimension
+</div>
 
-        const videoElement = document.getElementById('webcam-feed');
-        const statusDisplay = document.getElementById('cam-status');
+<video id="video" autoplay playsinline style="display:none"></video>
 
-        function initThree() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 5;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            document.body.appendChild(renderer.domElement);
+<script>
+let scene,camera,renderer,particles,points;
+let target=[],current=[];
+let world=0,bursts=[];
+let handX=0,handY=0,handScale=1;
+const N=18000;
+const video=document.getElementById("video");
+const status=document.getElementById("status");
+const tracking=document.getElementById("tracking");
 
-            buildShape();
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        }
+function randn(){return (Math.random()+Math.random()+Math.random()+Math.random()-2)/2}
 
-        function generateGeometry(id, count) {
-            const positions = new Float32Array(count * 3);
-            const colors = new Float32Array(count * 3);
+function makeWorld(id){
+  target=new Array(N*3);
+  for(let i=0;i<N;i++){
+    let x=0,y=0,z=0;
+    if(id===0){ // Nebula
+      const a=Math.random()*Math.PI*2, r=Math.pow(Math.random(),.55)*4.2;
+      const arm=(i%5)*Math.PI*2/5;
+      x=Math.cos(a*2.2+arm)*r + randn()*.35;
+      z=Math.sin(a*2.2+arm)*r + randn()*.35;
+      y=randn()*(1.2-r*.12);
+    }else if(id===1){ // DNA
+      const t=(i/N)*Math.PI*14;
+      const r=.9+Math.sin(t*2)*.15;
+      x=Math.cos(t)*r;
+      y=(i/N-.5)*6;
+      z=Math.sin(t)*r;
+      if(i%2){x=-x;z=-z}
+      x+=randn()*.08;y+=randn()*.08;z+=randn()*.08;
+    }else if(id===2){ // Black hole
+      const a=Math.random()*Math.PI*2;
+      const r=.35+Math.pow(Math.random(),.55)*4.2;
+      const bend=1.7/r;
+      x=Math.cos(a+bend)*r;
+      z=Math.sin(a+bend)*r;
+      y=randn()*(.08+.35*(r/4.2));
+      if(r<.7){x*=.35;z*=.35}
+    }else{ // Quantum grid / lattice
+      const s=26, spacing=.25;
+      x=(i%s)*spacing-s*spacing/2;
+      y=(Math.floor(i/s)%s)*spacing-s*spacing/2;
+      z=(Math.floor(i/(s*s))%s)*spacing-s*spacing/2;
+      x+=Math.sin(y*2+z)*.12;y+=Math.sin(z*2+x)*.12;z+=Math.sin(x*2+y)*.12;
+    }
+    target[i*3]=x;target[i*3+1]=y;target[i*3+2]=z;
+  }
+}
 
-            for (let i = 0; i < count; i++) {
-                if (id === 0) { // SPHERE CLOUD
-                    const r = 2.2, theta = Math.random() * Math.PI * 2, phi = Math.acos(2 * Math.random() - 1);
-                    const d = Math.pow(Math.random(), 0.5) * r;
-                    positions[i*3] = d * Math.sin(phi) * Math.cos(theta);
-                    positions[i*3+1] = d * Math.sin(phi) * Math.sin(theta);
-                    positions[i*3+2] = d * Math.cos(phi);
-                } 
-                else if (id === 1) { // TORUS KNOT
-                    const t = (i / count) * Math.PI * 2 * 10;
-                    const p = 2, q = 3;
-                    const r = 0.6 * (2 + Math.sin(q * t));
-                    positions[i*3] = r * Math.cos(p * t);
-                    positions[i*3+1] = r * Math.cos(q * t);
-                    positions[i*3+2] = r * Math.sin(p * t);
-                } 
-                else { // GALAXY SPIRAL
-                    const angle = Math.random() * Math.PI * 2;
-                    const radius = Math.random() * 4;
-                    const spinAngle = radius * 1.5;
-                    const branchAngle = (i % 3) * ((Math.PI * 2) / 3);
-                    const randomX = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.3;
-                    const randomY = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.3;
-                    positions[i*3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
-                    positions[i*3+1] = randomY;
-                    positions[i*3+2] = Math.sin(branchAngle + spinAngle) * radius;
-                }
-                colors[i*3] = 0; colors[i*3+1] = 0.9; colors[i*3+2] = 1;
-            }
-            return { positions, colors };
-        }
+function init(){
+ scene=new THREE.Scene();
+ camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,100);
+ camera.position.z=7;
 
-        function buildShape() {
-            if (mainParticles) scene.remove(mainParticles);
-            const data = generateGeometry(shapeIndex, TOTAL_STARS);
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.BufferAttribute(data.positions, 3));
-            geo.setAttribute('color', new THREE.BufferAttribute(data.colors, 3));
-            const mat = new THREE.PointsMaterial({ size: 0.025, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true });
-            mainParticles = new THREE.Points(geo, mat);
-            scene.add(mainParticles);
-        }
+ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+ renderer.setSize(innerWidth,innerHeight);
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+ document.getElementById("scene").appendChild(renderer.domElement);
 
-        function spawnFirework(x, y) {
-            const count = 400;
-            const geo = new THREE.BufferGeometry();
-            const p = new Float32Array(count * 3), v = new Float32Array(count * 3), c = new Float32Array(count * 3);
-            for (let i = 0; i < count; i++) {
-                p[i*3]=x; p[i*3+1]=y; p[i*3+2]=0;
-                const speed = 0.08 + Math.random() * 0.12;
-                const theta = Math.random() * Math.PI * 2, phi = Math.acos(2 * Math.random() - 1);
-                v[i*3] = speed * Math.sin(phi) * Math.cos(theta);
-                v[i*3+1] = speed * Math.sin(phi) * Math.sin(theta);
-                v[i*3+2] = speed * Math.cos(phi);
-                c[i*3]=1; c[i*3+1]=0.5; c[i*3+2]=0;
-            }
-            geo.setAttribute('position', new THREE.BufferAttribute(p, 3));
-            geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
-            const fw = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.04, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending }));
-            fw.userData = { v, life: 1.0 };
-            scene.add(fw); fireworks.push(fw);
-        }
+ const geo=new THREE.BufferGeometry();
+ const pos=new Float32Array(N*3);
+ const col=new Float32Array(N*3);
+ for(let i=0;i<N*3;i++){pos[i]=randn()*2;col[i]=.5}
+ geo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+ geo.setAttribute("color",new THREE.BufferAttribute(col,3));
 
-        const hands = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
-        hands.onResults((res) => {
-            if (!res.multiHandLandmarks || res.multiHandLandmarks.length === 0) return;
-            const lm = res.multiHandLandmarks[0];
-            mainParticles.position.x += ((lm[8].x - 0.5) * -12 - mainParticles.position.x) * 0.1;
-            mainParticles.position.y += ((lm[8].y - 0.5) * -10 - mainParticles.position.y) * 0.1;
-            scaleFactor = Math.sqrt(Math.pow(lm[4].x-lm[20].x,2) + Math.pow(lm[4].y-lm[20].y,2)) * 4;
+ const mat=new THREE.PointsMaterial({
+   size:.022,vertexColors:true,transparent:true,opacity:.9,
+   blending:THREE.AdditiveBlending,depthWrite:false
+ });
+ particles=new THREE.Points(geo,mat);scene.add(particles);
+ makeWorld(0);
+ current=Array.from(pos);
+ addStars();
+ addEvents();
+ animate();
+}
 
-            const pinchDist = Math.sqrt(Math.pow(lm[8].x-lm[4].x, 2) + Math.pow(lm[8].y-lm[4].y, 2));
-            if (pinchDist < 0.035 && canLaunchFirework) {
-                spawnFirework(mainParticles.position.x, mainParticles.position.y);
-                canLaunchFirework = false; setTimeout(() => canLaunchFirework = true, 500);
-            }
-            if (lm[12].y > lm[10].y && Date.now() - lastShapeChange > 1200) {
-                shapeIndex = (shapeIndex + 1) % 3; buildShape(); lastShapeChange = Date.now();
-            }
-        });
+function addStars(){
+ const g=new THREE.BufferGeometry(),p=new Float32Array(1300*3);
+ for(let i=0;i<p.length;i++)p[i]=(Math.random()-.5)*45;
+ g.setAttribute("position",new THREE.BufferAttribute(p,3));
+ const m=new THREE.PointsMaterial({size:.012,color:0x7ccdd6,transparent:true,opacity:.45});
+ scene.add(new THREE.Points(g,m));
+}
 
-        async function startSystem() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                videoElement.srcObject = stream;
-                videoElement.onloadedmetadata = () => {
-                    videoElement.play();
-                    statusDisplay.innerText = "Status: Tracking Active";
-                    new Camera(videoElement, { onFrame: async () => await hands.send({ image: videoElement }), width: 640, height: 480 }).start();
-                };
-            } catch (e) { statusDisplay.innerText = "Status: Check Browser Permissions"; }
-        }
+function setWorld(id){
+ world=id;makeWorld(id);
+ status.textContent="DIMENSION: "+["NEBULA","DNA FIELD","BLACK HOLE","QUANTUM GRID"][id];
+ burst(0,0,0,1200);
+}
 
-        function animate() {
-            requestAnimationFrame(animate);
-            if (mainParticles) { mainParticles.scale.setScalar(scaleFactor); mainParticles.rotation.y += 0.006; }
-            for (let i = fireworks.length - 1; i >= 0; i--) {
-                const f = fireworks[i]; const pos = f.geometry.attributes.position.array; const vel = f.userData.v;
-                f.userData.life -= 0.02; f.material.opacity = f.userData.life;
-                for (let j = 0; j < pos.length; j++) { pos[j] += vel[j]; if (j % 3 === 1) vel[j] -= 0.0015; }
-                f.geometry.attributes.position.needsUpdate = true;
-                if (f.userData.life <= 0) { scene.remove(f); fireworks.splice(i, 1); }
-            }
-            renderer.render(scene, camera);
-        }
+function burst(x,y,z,count=700){
+ const g=new THREE.BufferGeometry(),p=new Float32Array(count*3),v=new Float32Array(count*3);
+ for(let i=0;i<count;i++){
+  p[i*3]=x;p[i*3+1]=y;p[i*3+2]=z;
+  const a=Math.random()*Math.PI*2,b=Math.acos(2*Math.random()-1),s=.025+Math.random()*.09;
+  v[i*3]=Math.sin(b)*Math.cos(a)*s;
+  v[i*3+1]=Math.sin(b)*Math.sin(a)*s;
+  v[i*3+2]=Math.cos(b)*s;
+ }
+ const m=new THREE.PointsMaterial({size:.035,color:0x66ffff,transparent:true,opacity:1,blending:THREE.AdditiveBlending});
+ const o=new THREE.Points(g,m);o.userData={v:v,life:1};scene.add(o);bursts.push(o);
+}
 
-        initThree(); animate(); startSystem();
-    </script>
+function addEvents(){
+ addEventListener("resize",()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)
+ });
+ addEventListener("pointermove",e=>{
+  if(!window.handActive){
+   handX=(e.clientX/innerWidth-.5)*2;
+   handY=(e.clientY/innerHeight-.5)*2;
+  }
+ });
+ addEventListener("click",e=>{
+  if(e.target.tagName!=="BUTTON")burst(handX*3,-handY*2,0,450);
+ });
+}
+
+async function startCamera(){
+ try{
+  const stream=await navigator.mediaDevices.getUserMedia({video:true});
+  video.srcObject=stream;
+  const hands=new Hands({locateFile:f=>"https://cdn.jsdelivr.net/npm/@mediapipe/hands/"+f});
+  hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:.6,minTrackingConfidence:.55});
+  hands.onResults(r=>{
+   if(!r.multiHandLandmarks?.length){
+    window.handActive=false;tracking.textContent="● SEARCHING HAND";return;
+   }
+   window.handActive=true;tracking.textContent="● HAND LINK ACTIVE";
+   const lm=r.multiHandLandmarks[0];
+   handX=(.5-lm[8].x)*2.4;handY=(lm[8].y-.5)*2.0;
+   const pinch=Math.hypot(lm[4].x-lm[8].x,lm[4].y-lm[8].y);
+   const palm=Math.hypot(lm[5].x-lm[17].x,lm[5].y-lm[17].y);
+   handScale=THREE.MathUtils.lerp(handScale,THREE.MathUtils.clamp(palm*4.8,.65,1.9),.12);
+   if(pinch<.045 && !window.pinch){
+    burst(handX*3,-handY*2,0,900);window.pinch=true;
+   }
+   if(pinch>.075)window.pinch=false;
+  });
+  new Camera(video,{onFrame:async()=>hands.send({image:video}),width:640,height:480}).start();
+  status.textContent="CAMERA: ONLINE // GESTURE ENGINE ACTIVE";
+ }catch(e){
+  status.textContent="CAMERA BLOCKED // MOUSE FALLBACK ACTIVE";
+  tracking.textContent="● MOUSE FALLBACK";
+ }
+}
+
+document.getElementById("launch").onclick=()=>{
+ document.getElementById("start").style.display="none";
+ startCamera();
+};
+
+function animate(){
+ requestAnimationFrame(animate);
+ if(particles){
+  const a=particles.geometry.attributes.position.array;
+  for(let i=0;i<a.length;i++)a[i]+=(target[i]*handScale-a[i])*.045;
+  particles.position.x+=(handX*1.5-particles.position.x)*.035;
+  particles.position.y+=(-handY*1.0-particles.position.y)*.035;
+  particles.rotation.y+=.0025;
+  particles.rotation.x=Math.sin(Date.now()*.00025)*.12;
+ }
+ for(let i=bursts.length-1;i>=0;i--){
+  const o=bursts[i],a=o.geometry.attributes.position.array,v=o.userData.v;
+  o.userData.life-=.018;o.material.opacity=o.userData.life;
+  for(let j=0;j<a.length;j+=3){
+   a[j]+=v[j];a[j+1]+=v[j+1];a[j+2]+=v[j+2];
+   v[j+1]-=.0008;
+  }
+  o.geometry.attributes.position.needsUpdate=true;
+  if(o.userData.life<=0){scene.remove(o);bursts.splice(i,1)}
+ }
+ renderer.render(scene,camera);
+}
+init();
+</script>
 </body>
 </html>
